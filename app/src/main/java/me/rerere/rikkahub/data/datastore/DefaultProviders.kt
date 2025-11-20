@@ -306,4 +306,39 @@ val DEFAULT_PROVIDERS = listOf(
             )
         }
     ),
+    ProviderSetting.PPIO(
+        id = Uuid.parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+        name = "PPIO",
+        apiKey = "",
+        enabled = false,
+        builtIn = true,
+        description = {
+            Text(
+                text = buildAnnotatedString {
+                    append("PPIO Seedream 4.0图像生成服务，支持高质量的文本到图像生成。")
+                    appendLine()
+                    append("官网：")
+                    withLink(LinkAnnotation.Url("https://pp.io")) {
+                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
+                            append("https://pp.io")
+                        }
+                    }
+                }
+            )
+        },
+        shortDescription = {
+            Text("PPIO Seedream 4.0图像生成")
+        },
+        models = listOf(
+            Model(
+                id = Uuid.parse("b2c3d4e5-f6g7-8901-bcde-f23456789012"),
+                modelId = "seedream-4.0",
+                displayName = "Seedream 4.0",
+                type = me.rerere.ai.provider.ModelType.IMAGE,
+                inputModalities = setOf(me.rerere.ai.provider.Modality.TEXT),
+                outputModalities = setOf(me.rerere.ai.provider.Modality.IMAGE),
+                abilities = emptySet()
+            )
+        )
+    ),
 )

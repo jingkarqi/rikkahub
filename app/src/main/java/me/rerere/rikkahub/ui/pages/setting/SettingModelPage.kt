@@ -6,17 +6,22 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Scaffold
@@ -44,7 +49,6 @@ import com.composables.icons.lucide.NotebookTabs
 import com.composables.icons.lucide.Settings2
 import me.rerere.ai.provider.ModelType
 import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.ai.prompts.DEFAULT_LEARNING_MODE_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_OCR_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_SUGGESTION_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_TITLE_PROMPT
@@ -74,7 +78,7 @@ fun SettingModelPage(vm: SettingVM = koinViewModel()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding + PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
                 DefaultChatModelSetting(settings = settings, vm = vm)
@@ -90,10 +94,6 @@ fun SettingModelPage(vm: SettingVM = koinViewModel()) {
 
             item {
                 DefaultTranslationModelSetting(settings = settings, vm = vm)
-            }
-
-            item {
-                LearningModePromptSetting(settings = settings, vm = vm)
             }
 
             item {
@@ -141,7 +141,8 @@ private fun DefaultTranslationModelSetting(
             IconButton(
                 onClick = {
                     showModal = true
-                }
+                },
+                colors = IconButtonDefaults.filledTonalIconButtonColors()
             ) {
                 Icon(Lucide.Settings2, null)
             }
@@ -237,7 +238,8 @@ private fun DefaultSuggestionModelSetting(
             IconButton(
                 onClick = {
                     showModal = true
-                }
+                },
+                colors = IconButtonDefaults.filledTonalIconButtonColors()
             ) {
                 Icon(Lucide.Settings2, null)
             }
@@ -329,7 +331,8 @@ private fun DefaultTitleModelSetting(
             IconButton(
                 onClick = {
                     showModal = true
-                }
+                },
+                colors = IconButtonDefaults.filledTonalIconButtonColors()
             ) {
                 Icon(Lucide.Settings2, null)
             }
@@ -422,80 +425,6 @@ private fun DefaultChatModelSetting(
 }
 
 @Composable
-private fun LearningModePromptSetting(
-    settings: Settings,
-    vm: SettingVM
-) {
-    var showModal by remember { mutableStateOf(false) }
-    ModelFeatureCard(
-        title = {
-            Text(stringResource(R.string.setting_model_page_learning_mode), maxLines = 1)
-        },
-        description = {
-            Text(stringResource(R.string.setting_model_page_learning_mode_desc))
-        },
-        icon = {
-            Icon(Lucide.GraduationCap, null)
-        },
-        actions = {
-            IconButton(
-                onClick = {
-                    showModal = true
-                }
-            ) {
-                Icon(Lucide.Settings2, null)
-            }
-        }
-    )
-
-    if (showModal) {
-        ModalBottomSheet(
-            onDismissRequest = {
-                showModal = false
-            },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                FormItem(
-                    label = {
-                        Text(stringResource(R.string.setting_model_page_prompt))
-                    },
-                ) {
-                    OutlinedTextField(
-                        value = settings.learningModePrompt,
-                        onValueChange = {
-                            vm.updateSettings(
-                                settings.copy(
-                                    learningModePrompt = it
-                                )
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        maxLines = 10,
-                    )
-                    TextButton(
-                        onClick = {
-                            vm.updateSettings(
-                                settings.copy(
-                                    learningModePrompt = DEFAULT_LEARNING_MODE_PROMPT
-                                )
-                            )
-                        }
-                    ) {
-                        Text(stringResource(R.string.setting_model_page_reset_to_default))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun DefaultOcrModelSetting(
     settings: Settings,
     vm: SettingVM
@@ -533,7 +462,8 @@ private fun DefaultOcrModelSetting(
             IconButton(
                 onClick = {
                     showModal = true
-                }
+                },
+                colors = IconButtonDefaults.filledTonalIconButtonColors()
             ) {
                 Icon(Lucide.Settings2, null)
             }
@@ -598,40 +528,44 @@ private fun ModelFeatureCard(
     title: @Composable () -> Unit,
     actions: @Composable RowScope.() -> Unit
 ) {
-    Card(
-        modifier = modifier,
+    OutlinedCard(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(16.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        icon()
-                        ProvideTextStyle(MaterialTheme.typography.titleLarge) {
-                            title()
-                        }
+                    ProvideTextStyle(MaterialTheme.typography.titleMedium) {
+                        title()
                     }
                     ProvideTextStyle(
                         MaterialTheme.typography.bodySmall.copy(
-                            color = LocalContentColor.current.copy(
-                                alpha = 0.7f
-                            )
+                            color = LocalContentColor.current.copy(alpha = 0.6f)
                         )
                     ) {
                         description()
                     }
                 }
+                Box(
+                    modifier = Modifier
+                        .size(40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    icon()
+                }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),

@@ -335,9 +335,9 @@ class ChatCompletionsAPI(
 
                     else -> {
                         // OpenAI 官方
-                        // 文档中，只支持 "low", "medium", "high"
+                        // 文档中，completions API 只支持 "low", "medium", "high"
                         if (level != ReasoningLevel.AUTO) {
-                            put("reasoning_effort", if(level.effort == "minimal") "low" else level.effort)
+                            put("reasoning_effort", if (level.effort == "none") "low" else level.effort)
                         }
                     }
                 }
@@ -370,11 +370,10 @@ class ChatCompletionsAPI(
     }
 
     private fun buildMessages(messages: List<UIMessage>) = buildJsonArray {
-        messages
-            .filter {
-                it.isValidToUpload()
-            }
-            .forEachIndexed { index, message ->
+        val filteredMessages = messages.filter { it.isValidToUpload() }
+        val lastUserMessageIndex = filteredMessages.indexOfLast { it.role == MessageRole.USER }
+
+        filteredMessages.forEachIndexed { index, message ->
                 if (message.role == MessageRole.TOOL) {
                     message.getToolResults().forEach { result ->
                         add(buildJsonObject {
@@ -389,6 +388,14 @@ class ChatCompletionsAPI(
                 add(buildJsonObject {
                     // role
                     put("role", JsonPrimitive(message.role.name.lowercase()))
+
+                    // reasoning
+                    // 只回传最后一条 user 消息之后的思考内容
+                    if (index > lastUserMessageIndex) {
+                        message.parts.filterIsInstance<UIMessagePart.Reasoning>().firstOrNull()?.let { reasoning ->
+                            put("reasoning_content", reasoning.reasoning)
+                        }
+                    }
 
                     // content
                     if (message.parts.isOnlyTextPart()) {

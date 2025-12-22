@@ -6,6 +6,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -33,7 +35,6 @@ import me.rerere.ai.ui.UIMessagePart
 import me.rerere.ai.ui.handleMessageChunk
 import me.rerere.ai.ui.limitContext
 import me.rerere.ai.ui.truncate
-import me.rerere.rikkahub.data.ai.prompts.DEFAULT_LEARNING_MODE_PROMPT
 import me.rerere.rikkahub.data.ai.transformers.InputMessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.MessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.OutputMessageTransformer
@@ -49,6 +50,7 @@ import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
 import me.rerere.rikkahub.utils.applyPlaceholders
 import java.util.Locale
+import kotlin.time.Clock
 
 private const val TAG = "GenerationHandler"
 
@@ -114,7 +116,8 @@ class GenerationHandler(
                         transformers = outputTransformers,
                         context = context,
                         model = model,
-                        assistant = assistant
+                        assistant = assistant,
+                        settings = settings
                     )
                     emit(
                         GenerationChunk.Messages(
@@ -122,7 +125,8 @@ class GenerationHandler(
                                 transformers = outputTransformers,
                                 context = context,
                                 model = model,
-                                assistant = assistant
+                                assistant = assistant,
+                                settings = settings
                             )
                         )
                     )
@@ -140,13 +144,19 @@ class GenerationHandler(
                 transformers = outputTransformers,
                 context = context,
                 model = model,
-                assistant = assistant
+                assistant = assistant,
+                settings = settings
             )
             messages = messages.onGenerationFinish(
                 transformers = outputTransformers,
                 context = context,
                 model = model,
-                assistant = assistant
+                assistant = assistant,
+                settings = settings
+            )
+            messages = messages.slice(0 until messages.lastIndex) + messages.last().copy(
+                finishedAt = Clock.System.now()
+                    .toLocalDateTime(TimeZone.currentSystemDefault())
             )
             emit(GenerationChunk.Messages(messages))
 
@@ -202,7 +212,8 @@ class GenerationHandler(
                         transformers = outputTransformers,
                         context = context,
                         model = model,
-                        assistant = assistant
+                        assistant = assistant,
+                        settings = settings
                     )
                 )
             )
@@ -241,22 +252,21 @@ class GenerationHandler(
                     append(buildRecentChatsPrompt(assistant))
                 }
 
-                // 学习模式
-                if (assistant.learningMode) {
-                    appendLine()
-                    append(settings.learningModePrompt.ifEmpty { DEFAULT_LEARNING_MODE_PROMPT })
-                    appendLine()
-                }
-
                 // 工具prompt
                 tools.forEach { tool ->
                     appendLine()
                     append(tool.systemPrompt(model, messages))
                 }
             }
-            if (system.isNotBlank()) add(UIMessage.system(system))
+            if (system.isNotBlank()) add(UIMessage.system(prompt = system))
             addAll(messages.truncate(truncateIndex).limitContext(assistant.contextMessageSize))
-        }.transforms(transformers, context, model, assistant)
+        }.transforms(
+            transformers = transformers,
+            context = context,
+            model = model,
+            assistant = assistant,
+            settings = settings
+        )
 
         var messages: List<UIMessage> = messages
         val params = TextGenerationParams(
@@ -276,12 +286,14 @@ class GenerationHandler(
             }
         )
         if (stream) {
-            aiLoggingManager.addLog(AILogging.Generation(
-                params = params,
-                messages = messages,
-                providerSetting = provider,
-                stream = true
-            ))
+            aiLoggingManager.addLog(
+                AILogging.Generation(
+                    params = params,
+                    messages = messages,
+                    providerSetting = provider,
+                    stream = true
+                )
+            )
             providerImpl.streamText(
                 providerSetting = provider,
                 messages = internalMessages,
@@ -300,12 +312,14 @@ class GenerationHandler(
                 onUpdateMessages(messages)
             }
         } else {
-            aiLoggingManager.addLog(AILogging.Generation(
-                params = params,
-                messages = messages,
-                providerSetting = provider,
-                stream = false
-            ))
+            aiLoggingManager.addLog(
+                AILogging.Generation(
+                    params = params,
+                    messages = messages,
+                    providerSetting = provider,
+                    stream = false
+                )
+            )
             val chunk = providerImpl.generateText(
                 providerSetting = provider,
                 messages = internalMessages,

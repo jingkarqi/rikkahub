@@ -204,6 +204,10 @@ fun ChatMessage(
                 )
             }
         }
+
+        ProvideTextStyle(textStyle) {
+            ChatMessageNerdLine(message = message)
+        }
     }
     if (showActionsSheet) {
         ChatMessageActionsSheet(

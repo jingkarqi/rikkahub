@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -692,7 +691,8 @@ private fun ModelList(
                     onUpdateProvider(providerSetting.delModel(it))
                 },
                 expanded = expanded,
-                parentProvider = providerSetting
+                parentProvider = providerSetting,
+                onUpdateProvider = onUpdateProvider
             )
         }
     }
@@ -886,7 +886,8 @@ private fun AddModelButton(
     expanded: Boolean,
     onAddModel: (Model) -> Unit,
     onRemoveModel: (Model) -> Unit,
-    parentProvider: ProviderSetting
+    parentProvider: ProviderSetting,
+    onUpdateProvider: (ProviderSetting) -> Unit
 ) {
     val dialogState = useEditState<Model> { onAddModel(it) }
     val scope = rememberCoroutineScope()
@@ -912,6 +913,30 @@ private fun AddModelButton(
             },
             onModelDeselected = { model ->
                 onRemoveModel(model)
+            },
+            onAllModelSelected = {
+                onUpdateProvider(
+                    parentProvider.copyProvider(
+                        models = parentProvider.models + it.filter { model ->
+                            parentProvider.models.none { existing -> existing.modelId == model.modelId }
+                        }.map { model ->
+                            model.copy(
+                                inputModalities = ModelRegistry.MODEL_INPUT_MODALITIES.getData(model.modelId),
+                                outputModalities = ModelRegistry.MODEL_OUTPUT_MODALITIES.getData(model.modelId),
+                                abilities = ModelRegistry.MODEL_ABILITIES.getData(model.modelId)
+                            )
+                        }
+                    )
+                )
+            },
+            onAllModelDeselected = { filteredModels ->
+                onUpdateProvider(
+                    parentProvider.copyProvider(
+                        models = parentProvider.models.filter { model ->
+                            filteredModels.none { filtered -> filtered.modelId == model.modelId }
+                        }
+                    )
+                )
             }
         )
 
@@ -1020,7 +1045,9 @@ private fun ModelPicker(
     models: List<Model>,
     selectedModels: List<Model>,
     onModelSelected: (Model) -> Unit,
-    onModelDeselected: (Model) -> Unit
+    onModelDeselected: (Model) -> Unit,
+    onAllModelSelected: (List<Model>) -> Unit,
+    onAllModelDeselected: (List<Model>) -> Unit
 ) {
     var showModal by remember { mutableStateOf(false) }
     if (showModal) {
@@ -1050,6 +1077,41 @@ private fun ModelPicker(
                     .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                // 标题栏和添加所有按钮
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.setting_provider_page_avaliable_models),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    val unselectedCount = filteredModels.count { model ->
+                        selectedModels.none { it.modelId == model.modelId }
+                    }
+
+                    TextButton(
+                        onClick = {
+                            if (unselectedCount > 0) {
+                                onAllModelSelected(filteredModels)
+                            } else {
+                                onAllModelDeselected(filteredModels)
+                            }
+                        },
+                    ) {
+                        Text(
+                            if (unselectedCount > 0) stringResource(
+                                R.string.setting_provider_page_select_all,
+                                unselectedCount
+                            ) else stringResource(R.string.setting_provider_page_deselect_models)
+                        )
+                    }
+                }
+
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()

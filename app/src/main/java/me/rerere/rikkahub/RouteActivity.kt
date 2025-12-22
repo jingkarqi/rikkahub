@@ -6,7 +6,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -27,7 +32,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDeepLink
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -44,6 +53,7 @@ import me.rerere.highlight.Highlighter
 import me.rerere.highlight.LocalHighlighter
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.ui.components.ui.TTSController
+import me.rerere.rikkahub.ui.context.LocalAnimatedVisibilityScope
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.context.LocalSharedTransitionScope
@@ -53,7 +63,14 @@ import me.rerere.rikkahub.ui.hooks.readBooleanPreference
 import me.rerere.rikkahub.ui.hooks.readStringPreference
 import me.rerere.rikkahub.ui.hooks.rememberCustomTtsState
 import me.rerere.rikkahub.ui.pages.assistant.AssistantPage
+import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantBasicPage
 import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantDetailPage
+import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantInjectionsPage
+import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantLocalToolPage
+import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantMcpPage
+import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantMemoryPage
+import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantPromptPage
+import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantRequestPage
 import me.rerere.rikkahub.ui.pages.backup.BackupPage
 import me.rerere.rikkahub.ui.pages.chat.ChatPage
 import me.rerere.rikkahub.ui.pages.debug.DebugPage
@@ -61,6 +78,7 @@ import me.rerere.rikkahub.ui.pages.developer.DeveloperPage
 import me.rerere.rikkahub.ui.pages.history.HistoryPage
 import me.rerere.rikkahub.ui.pages.imggen.ImageGenPage
 import me.rerere.rikkahub.ui.pages.menu.MenuPage
+import me.rerere.rikkahub.ui.pages.prompts.PromptPage
 import me.rerere.rikkahub.ui.pages.setting.SettingAboutPage
 import me.rerere.rikkahub.ui.pages.setting.SettingDisplayPage
 import me.rerere.rikkahub.ui.pages.setting.SettingDonatePage
@@ -78,6 +96,7 @@ import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import me.rerere.rikkahub.ui.theme.RikkahubTheme
 import okhttp3.OkHttpClient
 import org.koin.android.ext.android.inject
+import kotlin.reflect.KType
 import kotlin.uuid.Uuid
 
 private const val TAG = "RouteActivity"
@@ -124,14 +143,22 @@ class RouteActivity : ComponentActivity() {
                 action = intent?.action
                 putExtra(Intent.EXTRA_TEXT, intent?.getStringExtra(Intent.EXTRA_TEXT))
                 putExtra(Intent.EXTRA_STREAM, intent?.getStringExtra(Intent.EXTRA_STREAM))
+                putExtra(Intent.EXTRA_PROCESS_TEXT, intent?.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT))
             }
         }
 
         LaunchedEffect(navBackStack) {
-            if (shareIntent.action == Intent.ACTION_SEND) {
-                val text = shareIntent.getStringExtra(Intent.EXTRA_TEXT) ?: ""
-                val imageUri = shareIntent.getStringExtra(Intent.EXTRA_STREAM)
-                navBackStack.navigate(Screen.ShareHandler(text, imageUri))
+            when (shareIntent.action) {
+                Intent.ACTION_SEND -> {
+                    val text = shareIntent.getStringExtra(Intent.EXTRA_TEXT) ?: ""
+                    val imageUri = shareIntent.getStringExtra(Intent.EXTRA_STREAM)
+                    navBackStack.navigate(Screen.ShareHandler(text, imageUri))
+                }
+
+                Intent.ACTION_PROCESS_TEXT -> {
+                    val text = shareIntent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString() ?: ""
+                    navBackStack.navigate(Screen.ShareHandler(text, null))
+                }
             }
         }
     }
@@ -214,13 +241,48 @@ class RouteActivity : ComponentActivity() {
                         HistoryPage()
                     }
 
-                    composable<Screen.Assistant> {
+                    composableWrapper<Screen.Assistant> {
                         AssistantPage()
                     }
 
-                    composable<Screen.AssistantDetail> { backStackEntry ->
+                    composableWrapper<Screen.AssistantDetail> { backStackEntry ->
                         val route = backStackEntry.toRoute<Screen.AssistantDetail>()
                         AssistantDetailPage(route.id)
+                    }
+
+                    composable<Screen.AssistantBasic> { backStackEntry ->
+                        val route = backStackEntry.toRoute<Screen.AssistantBasic>()
+                        AssistantBasicPage(route.id)
+                    }
+
+                    composable<Screen.AssistantPrompt> { backStackEntry ->
+                        val route = backStackEntry.toRoute<Screen.AssistantPrompt>()
+                        AssistantPromptPage(route.id)
+                    }
+
+                    composable<Screen.AssistantMemory> { backStackEntry ->
+                        val route = backStackEntry.toRoute<Screen.AssistantMemory>()
+                        AssistantMemoryPage(route.id)
+                    }
+
+                    composable<Screen.AssistantRequest> { backStackEntry ->
+                        val route = backStackEntry.toRoute<Screen.AssistantRequest>()
+                        AssistantRequestPage(route.id)
+                    }
+
+                    composable<Screen.AssistantMcp> { backStackEntry ->
+                        val route = backStackEntry.toRoute<Screen.AssistantMcp>()
+                        AssistantMcpPage(route.id)
+                    }
+
+                    composable<Screen.AssistantLocalTool> { backStackEntry ->
+                        val route = backStackEntry.toRoute<Screen.AssistantLocalTool>()
+                        AssistantLocalToolPage(route.id)
+                    }
+
+                    composable<Screen.AssistantInjections> { backStackEntry ->
+                        val route = backStackEntry.toRoute<Screen.AssistantInjections>()
+                        AssistantInjectionsPage(route.id)
                     }
 
                     composable<Screen.Menu> {
@@ -293,10 +355,56 @@ class RouteActivity : ComponentActivity() {
                     composable<Screen.Debug> {
                         DebugPage()
                     }
+
+                    composable<Screen.Prompts> {
+                        PromptPage()
+                    }
                 }
             }
         }
     }
+}
+
+inline fun <reified T : Any> NavGraphBuilder.composableWrapper(
+    typeMap: Map<KType, @JvmSuppressWildcards NavType<*>> = emptyMap(),
+    deepLinks: List<NavDeepLink> = emptyList(),
+    noinline enterTransition:
+    (AnimatedContentTransitionScope<NavBackStackEntry>.() -> @JvmSuppressWildcards
+    EnterTransition?)? =
+        null,
+    noinline exitTransition:
+    (AnimatedContentTransitionScope<NavBackStackEntry>.() -> @JvmSuppressWildcards
+    ExitTransition?)? =
+        null,
+    noinline popEnterTransition:
+    (AnimatedContentTransitionScope<NavBackStackEntry>.() -> @JvmSuppressWildcards
+    EnterTransition?)? =
+        enterTransition,
+    noinline popExitTransition:
+    (AnimatedContentTransitionScope<NavBackStackEntry>.() -> @JvmSuppressWildcards
+    ExitTransition?)? =
+        exitTransition,
+    noinline sizeTransform:
+    (AnimatedContentTransitionScope<NavBackStackEntry>.() -> @JvmSuppressWildcards
+    SizeTransform?)? =
+        null,
+    noinline content: @Composable AnimatedContentScope.(NavBackStackEntry) -> Unit
+) {
+    composable(
+        route = T::class,
+        typeMap = typeMap,
+        deepLinks = deepLinks,
+        enterTransition = enterTransition,
+        exitTransition = exitTransition,
+        popEnterTransition = popEnterTransition,
+        popExitTransition = popExitTransition,
+        sizeTransform = sizeTransform,
+        content = {
+            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                content(it)
+            }
+        }
+    )
 }
 
 sealed interface Screen {
@@ -314,6 +422,27 @@ sealed interface Screen {
 
     @Serializable
     data class AssistantDetail(val id: String) : Screen
+
+    @Serializable
+    data class AssistantBasic(val id: String) : Screen
+
+    @Serializable
+    data class AssistantPrompt(val id: String) : Screen
+
+    @Serializable
+    data class AssistantMemory(val id: String) : Screen
+
+    @Serializable
+    data class AssistantRequest(val id: String) : Screen
+
+    @Serializable
+    data class AssistantMcp(val id: String) : Screen
+
+    @Serializable
+    data class AssistantLocalTool(val id: String) : Screen
+
+    @Serializable
+    data class AssistantInjections(val id: String) : Screen
 
     @Serializable
     data object Menu : Screen
@@ -365,4 +494,7 @@ sealed interface Screen {
 
     @Serializable
     data object Debug : Screen
+
+    @Serializable
+    data object Prompts : Screen
 }

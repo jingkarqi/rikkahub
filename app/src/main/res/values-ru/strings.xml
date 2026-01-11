@@ -217,14 +217,6 @@
   <string name="chat_page_yesterday">Вчера</string>
   <string name="chat_size_dialog_content">Текущий размер: %.2f МБ. Это может привести к вылету или зависанию приложения, а также к потере данных этой беседы. Пожалуйста, создайте новый чат как можно скорее, чтобы продолжить общение.</string>
   <string name="chat_size_dialog_title">Данные этого разговора слишком большие</string>
-  <string name="chat_welcome_suggestion_brainstorm_prompt">Помоги мне придумать идеи о</string>
-  <string name="chat_welcome_suggestion_brainstorm_title">Мозговой штурм</string>
-  <string name="chat_welcome_suggestion_explain_prompt">Пожалуйста, объясните простыми словами</string>
-  <string name="chat_welcome_suggestion_explain_title">Объяснить понятие</string>
-  <string name="chat_welcome_suggestion_programming_prompt">Пожалуйста, помогите мне написать код для</string>
-  <string name="chat_welcome_suggestion_programming_title">Помощник по программированию</string>
-  <string name="chat_welcome_suggestion_writing_prompt">Помоги мне написать статью о</string>
-  <string name="chat_welcome_suggestion_writing_title">Помоги мне написать</string>
   <string name="citations_count">%1$d цитирований</string>
   <string name="code_block_collapse">Свернуть</string>
   <string name="code_block_copy">Копировать код</string>
@@ -708,4 +700,31 @@
   <string name="injection_selector_lorebooks">Лорбуки</string>
   <string name="injection_selector_mode_injections_empty">Нет доступных внедрений режима</string>
   <string name="injection_selector_lorebooks_empty">Нет доступных книг знаний</string>
+  <string name="setting_display_page_show_line_numbers_title">Показывать номера строк</string>
+  <string name="setting_display_page_show_line_numbers_desc">Отображать номера строк в блоках кода</string>
+  <string name="export_title">Экспорт</string>
+  <string name="export_to_file">Экспорт в файл</string>
+  <string name="export_to_file_desc">Сохранить как файл JSON</string>
+  <string name="export_share">Поделиться</string>
+  <string name="export_share_desc">Поделиться через другие приложения</string>
+  <string name="export_cancel">Отмена</string>
+  <string name="export_import_success">Импорт выполнен успешно</string>
+  <string name="export_import_failed">Ошибка импорта: %s</string>
+  <string name="text_area_import_success">Файл успешно импортирован</string>
+  <string name="text_area_import_failed">Не удалось импортировать файл</string>
+  <string name="text_area_fullscreen_edit">Полноэкранное редактирование</string>
+  <string name="text_area_import_from_file">Импорт из файла</string>
+  <string name="text_area_save">Сохранить</string>
+  <string name="prompt_page_position_at_depth">На глубине</string>
+  <string name="prompt_page_inject_depth">Глубина инъекции</string>
+  <string name="setting_page_request_logs">Журналы запросов</string>
+  <string name="setting_page_request_logs_desc">Просмотр журналов HTTP-запросов</string>
+  <string name="backup_page_s3_endpoint">Конечная точка</string>
+  <string name="backup_page_s3_access_key_id">Идентификатор ключа доступа</string>
+  <string name="backup_page_s3_secret_access_key">Секретный ключ доступа</string>
+  <string name="backup_page_s3_bucket">Bucket</string>
+  <string name="backup_page_s3_region">Регион</string>
+  <string name="backup_page_s3_backup_files">Файлы резервного копирования S3</string>
+  <string name="backup_page_s3_backup">Резервное копирование S3</string>
 </resources>
+

@@ -3,8 +3,7 @@ package me.rerere.rikkahub.ui.pages.chat
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -91,7 +90,9 @@ import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.datastore.getAssistantById
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.MessageNode
+import me.rerere.rikkahub.service.ChatError
 import me.rerere.rikkahub.ui.components.message.ChatMessage
+import me.rerere.rikkahub.ui.components.ui.ErrorCardsDisplay
 import me.rerere.rikkahub.ui.components.ui.ListSelectableItem
 import me.rerere.rikkahub.ui.components.ui.Tooltip
 import me.rerere.rikkahub.ui.hooks.ImeLazyListAutoScroller
@@ -110,6 +111,9 @@ fun ChatList(
     loading: Boolean,
     previewMode: Boolean,
     settings: Settings,
+    errors: List<ChatError> = emptyList(),
+    onDismissError: (Uuid) -> Unit = {},
+    onClearAllErrors: () -> Unit = {},
     onRegenerate: (UIMessage) -> Unit = {},
     onEdit: (UIMessage) -> Unit = {},
     onForkMessage: (UIMessage) -> Unit = {},
@@ -120,51 +124,55 @@ fun ChatList(
     onClearTranslation: (UIMessage) -> Unit = {},
     onJumpToMessage: (Int) -> Unit = {},
 ) {
-    SharedTransitionLayout {
-        AnimatedContent(
-            targetState = previewMode,
-            label = "ChatListMode",
-            transitionSpec = {
-                (fadeIn() + scaleIn(initialScale = 0.8f) togetherWith fadeOut() + scaleOut(targetScale = 0.8f))
-            }
-        ) { target ->
-            if (target) {
-                ChatListPreview(
-                    innerPadding = innerPadding,
-                    conversation = conversation,
-                    settings = settings,
-                    onJumpToMessage = onJumpToMessage,
-                    animatedVisibilityScope = this@AnimatedContent,
-                )
-            } else {
-                ChatListNormal(
-                    innerPadding = innerPadding,
-                    conversation = conversation,
-                    state = state,
-                    loading = loading,
-                    settings = settings,
-                    onRegenerate = onRegenerate,
-                    onEdit = onEdit,
-                    onForkMessage = onForkMessage,
-                    onDelete = onDelete,
-                    onUpdateMessage = onUpdateMessage,
-                    onClickSuggestion = onClickSuggestion,
-                    onTranslate = onTranslate,
-                    onClearTranslation = onClearTranslation,
-                    animatedVisibilityScope = this@AnimatedContent,
-                )
-            }
+    AnimatedContent(
+        targetState = previewMode,
+        label = "ChatListMode",
+        transitionSpec = {
+            (fadeIn() + scaleIn(initialScale = 0.8f) togetherWith fadeOut() + scaleOut(targetScale = 0.8f))
+        }
+    ) { target ->
+        if (target) {
+            ChatListPreview(
+                innerPadding = innerPadding,
+                conversation = conversation,
+                settings = settings,
+                onJumpToMessage = onJumpToMessage,
+                animatedVisibilityScope = this@AnimatedContent,
+            )
+        } else {
+            ChatListNormal(
+                innerPadding = innerPadding,
+                conversation = conversation,
+                state = state,
+                loading = loading,
+                settings = settings,
+                errors = errors,
+                onDismissError = onDismissError,
+                onClearAllErrors = onClearAllErrors,
+                onRegenerate = onRegenerate,
+                onEdit = onEdit,
+                onForkMessage = onForkMessage,
+                onDelete = onDelete,
+                onUpdateMessage = onUpdateMessage,
+                onClickSuggestion = onClickSuggestion,
+                onTranslate = onTranslate,
+                onClearTranslation = onClearTranslation,
+                animatedVisibilityScope = this@AnimatedContent,
+            )
         }
     }
 }
 
 @Composable
-private fun SharedTransitionScope.ChatListNormal(
+private fun ChatListNormal(
     innerPadding: PaddingValues,
     conversation: Conversation,
     state: LazyListState,
     loading: Boolean,
     settings: Settings,
+    errors: List<ChatError>,
+    onDismissError: (Uuid) -> Unit,
+    onClearAllErrors: () -> Unit,
     onRegenerate: (UIMessage) -> Unit,
     onEdit: (UIMessage) -> Unit,
     onForkMessage: (UIMessage) -> Unit,
@@ -210,19 +218,6 @@ private fun SharedTransitionScope.ChatListNormal(
         modifier = Modifier
             .fillMaxSize(),
     ) {
-        // 欢迎界面 - 当对话为空时显示
-        AnimatedVisibility(
-            visible = conversation.newConversation && conversation.messageNodes.isEmpty(),
-            modifier = Modifier.padding(innerPadding).zIndex(5f),
-            enter = scaleIn() + fadeIn(),
-            exit = scaleOut() + fadeOut(),
-        ) {
-            ChatWelcome(
-                modifier = Modifier,
-                onClickSuggestion = onClickSuggestion
-            )
-        }
-
         // 自动滚动到底部
         LaunchedEffect(state) {
             snapshotFlow { state.layoutInfo.visibleItemsInfo }.collect { visibleItemsInfo ->
@@ -254,10 +249,6 @@ private fun SharedTransitionScope.ChatListNormal(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier
-                .sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = "conversation_list"),
-                    animatedVisibilityScope = animatedVisibilityScope
-                )
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
@@ -349,6 +340,16 @@ private fun SharedTransitionScope.ChatListNormal(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
+            // 错误消息卡片
+            ErrorCardsDisplay(
+                errors = errors,
+                onDismissError = onDismissError,
+                onClearAllErrors = onClearAllErrors,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .zIndex(5f)
+            )
+
             // 完成选择
             AnimatedVisibility(
                 visible = selecting,
@@ -516,7 +517,7 @@ private fun buildHighlightedText(
 }
 
 @Composable
-private fun SharedTransitionScope.ChatListPreview(
+private fun ChatListPreview(
     innerPadding: PaddingValues,
     conversation: Conversation,
     settings: Settings,
@@ -577,10 +578,6 @@ private fun SharedTransitionScope.ChatListPreview(
             contentPadding = PaddingValues(16.dp) + PaddingValues(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
-                .sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = "conversation_list"),
-                    animatedVisibilityScope = animatedVisibilityScope
-                )
                 .fillMaxWidth()
                 .weight(1f),
         ) {

@@ -77,6 +77,7 @@ import me.rerere.rikkahub.ui.pages.debug.DebugPage
 import me.rerere.rikkahub.ui.pages.developer.DeveloperPage
 import me.rerere.rikkahub.ui.pages.history.HistoryPage
 import me.rerere.rikkahub.ui.pages.imggen.ImageGenPage
+import me.rerere.rikkahub.ui.pages.log.LogPage
 import me.rerere.rikkahub.ui.pages.menu.MenuPage
 import me.rerere.rikkahub.ui.pages.prompts.PromptPage
 import me.rerere.rikkahub.ui.pages.setting.SettingAboutPage
@@ -250,7 +251,7 @@ class RouteActivity : ComponentActivity() {
                         AssistantDetailPage(route.id)
                     }
 
-                    composable<Screen.AssistantBasic> { backStackEntry ->
+                    composableWrapper<Screen.AssistantBasic> { backStackEntry ->
                         val route = backStackEntry.toRoute<Screen.AssistantBasic>()
                         AssistantBasicPage(route.id)
                     }
@@ -354,6 +355,10 @@ class RouteActivity : ComponentActivity() {
 
                     composable<Screen.Debug> {
                         DebugPage()
+                    }
+
+                    composable<Screen.Log> {
+                        LogPage()
                     }
 
                     composable<Screen.Prompts> {
@@ -494,6 +499,9 @@ sealed interface Screen {
 
     @Serializable
     data object Debug : Screen
+
+    @Serializable
+    data object Log : Screen
 
     @Serializable
     data object Prompts : Screen

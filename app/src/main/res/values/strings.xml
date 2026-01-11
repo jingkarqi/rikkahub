@@ -191,7 +191,9 @@
   <string name="chat_message_tool_search_web">Search web: %1$s</string>
   <string name="chat_page_cancel">Cancel</string>
   <string name="chat_page_clear_context">Clear Context</string>
+  <string name="chat_page_clear_all_errors">Clear all</string>
   <string name="chat_page_delete">Delete</string>
+  <string name="chat_page_dismiss_error">Dismiss error</string>
   <string name="chat_page_edit_nickname">Edit Nickname</string>
   <string name="chat_page_edit_title">Edit title</string>
   <string name="chat_page_edit_title_warning">Please chat first before editing the title</string>
@@ -217,14 +219,6 @@
   <string name="chat_page_yesterday">Yesterday</string>
   <string name="chat_size_dialog_content">Current size: %.2f MB. This may cause the application to crash or lag, or even lose this conversation data. Please create a new conversation as soon as possible to continue chatting.</string>
   <string name="chat_size_dialog_title">This conversation data is too large</string>
-  <string name="chat_welcome_suggestion_brainstorm_prompt">Help me brainstorm about</string>
-  <string name="chat_welcome_suggestion_brainstorm_title">Brainstorm</string>
-  <string name="chat_welcome_suggestion_explain_prompt">Please explain in simple terms</string>
-  <string name="chat_welcome_suggestion_explain_title">Explain concept</string>
-  <string name="chat_welcome_suggestion_programming_prompt">Please help me write code to</string>
-  <string name="chat_welcome_suggestion_programming_title">Programming assistant</string>
-  <string name="chat_welcome_suggestion_writing_prompt">Help me write an article about</string>
-  <string name="chat_welcome_suggestion_writing_title">Help me write</string>
   <string name="citations_count">%1$d Citations</string>
   <string name="code_block_collapse">Collapse</string>
   <string name="code_block_copy">Copy Code</string>
@@ -708,4 +702,31 @@
   <string name="injection_selector_lorebooks">Lorebooks</string>
   <string name="injection_selector_mode_injections_empty">No mode injections available</string>
   <string name="injection_selector_lorebooks_empty">No lorebooks available</string>
+  <string name="setting_display_page_show_line_numbers_title">Show Line Numbers</string>
+  <string name="setting_display_page_show_line_numbers_desc">Display line numbers in code blocks</string>
+  <string name="export_title">Export</string>
+  <string name="export_to_file">Export to file</string>
+  <string name="export_to_file_desc">Save as JSON file</string>
+  <string name="export_share">Share</string>
+  <string name="export_share_desc">Share via other apps</string>
+  <string name="export_cancel">Cancel</string>
+  <string name="export_import_success">Imported successfully</string>
+  <string name="export_import_failed">Import failed: %s</string>
+  <string name="text_area_import_success">File imported successfully</string>
+  <string name="text_area_import_failed">Failed to import file</string>
+  <string name="text_area_fullscreen_edit">Fullscreen edit</string>
+  <string name="text_area_import_from_file">Import from file</string>
+  <string name="text_area_save">Save</string>
+  <string name="prompt_page_position_at_depth">At Depth</string>
+  <string name="prompt_page_inject_depth">Inject Depth</string>
+  <string name="setting_page_request_logs">Request Logs</string>
+  <string name="setting_page_request_logs_desc">View HTTP request logs</string>
+  <string name="backup_page_s3_endpoint">Endpoint</string>
+  <string name="backup_page_s3_access_key_id">Access Key ID</string>
+  <string name="backup_page_s3_secret_access_key">Secret Access Key</string>
+  <string name="backup_page_s3_bucket">Bucket</string>
+  <string name="backup_page_s3_region">Region</string>
+  <string name="backup_page_s3_backup_files">S3 Backup Files</string>
+  <string name="backup_page_s3_backup">S3 Backup</string>
 </resources>
+

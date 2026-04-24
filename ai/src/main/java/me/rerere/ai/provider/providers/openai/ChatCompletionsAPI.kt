@@ -62,6 +62,7 @@ import okhttp3.sse.EventSources
 import kotlin.time.Clock
 
 private const val TAG = "ChatCompletionsAPI"
+private val markdownDataImageRegex = Regex("!\\[[^\\]]*]\\((data:image/[^;]+;base64,[^)\\s]+)\\)")
 
 class ChatCompletionsAPI(
     private val client: OkHttpClient,
@@ -596,6 +597,14 @@ class ChatCompletionsAPI(
 
         // 也许支持其他模态的输出content?
         val content = jsonObject["content"]?.jsonPrimitiveOrNull?.contentOrNull ?: ""
+        val markdownImages = markdownDataImageRegex.findAll(content)
+            .mapNotNull { it.groups.getOrNull(1)?.value }
+            .toList()
+        val textContent = if (markdownImages.isEmpty()) {
+            content
+        } else {
+            markdownDataImageRegex.replace(content, "").trim()
+        }
         val reasoning = jsonObject["reasoning_content"]?.jsonPrimitiveOrNull?.contentOrNull
             ?: jsonObject["reasoning"]?.jsonPrimitiveOrNull?.contentOrNull
             ?: jsonObject["content"]?.takeIf { it is JsonArray }?.let { arr ->
@@ -637,14 +646,17 @@ class ChatCompletionsAPI(
                         )
                     )
                 }
-                if (content.isNotEmpty()) add(UIMessagePart.Text(content))
+                if (textContent.isNotEmpty()) add(UIMessagePart.Text(textContent))
+                markdownImages.forEach { dataImageUrl ->
+                    add(UIMessagePart.Image(dataImageUrl))
+                }
                 images.forEach { image ->
                     val imageObject = image.jsonObjectOrNull ?: return@forEach
                     val type = imageObject["type"]?.jsonPrimitive?.contentOrNull ?: return@forEach
                     if (type != "image_url") return@forEach
                     val url = imageObject["image_url"]?.jsonObjectOrNull?.get("url")?.jsonPrimitive?.contentOrNull ?: return@forEach
                     require(url.startsWith("data:image")) { "Only data uri is supported" }
-                    add(UIMessagePart.Image(url.substringAfter("data:image/png;base64,")))
+                    add(UIMessagePart.Image(url))
                 }
             },
             annotations = parseAnnotations(

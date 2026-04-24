@@ -1,6 +1,8 @@
 package me.rerere.ai.provider.providers.openai
 
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -37,6 +39,15 @@ class ChatCompletionsAPIMessageTest {
         )
         method.isAccessible = true
         return method.invoke(api, messages) as JsonArray
+    }
+
+    private fun invokeParseMessage(message: kotlinx.serialization.json.JsonObject): UIMessage {
+        val method = ChatCompletionsAPI::class.java.getDeclaredMethod(
+            "parseMessage",
+            kotlinx.serialization.json.JsonObject::class.java
+        )
+        method.isAccessible = true
+        return method.invoke(api, message) as UIMessage
     }
 
     @Test
@@ -248,6 +259,59 @@ class ChatCompletionsAPIMessageTest {
         assertEquals("tool", nextMsg["role"]?.jsonPrimitive?.content)
         assertEquals("call_abc", nextMsg["tool_call_id"]?.jsonPrimitive?.content)
         assertEquals("my_tool", nextMsg["name"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `parseMessage should extract markdown data uri image into image part`() {
+        val base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO3hD2kAAAAASUVORK5CYII="
+        val message = buildJsonObject {
+            put("role", "assistant")
+            put("content", "![image_1](data:image/png;base64,$base64)")
+        }
+
+        val parsed = invokeParseMessage(message)
+        assertEquals(1, parsed.parts.size)
+        assertTrue(parsed.parts.first() is UIMessagePart.Image)
+        assertEquals("data:image/png;base64,$base64", (parsed.parts.first() as UIMessagePart.Image).url)
+    }
+
+    @Test
+    fun `parseMessage should keep text while extracting markdown data uri images`() {
+        val base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO3hD2kAAAAASUVORK5CYII="
+        val message = buildJsonObject {
+            put("role", "assistant")
+            put("content", "这里是图像：\\n![image_1](data:image/png;base64,$base64)\\n处理完成。")
+        }
+
+        val parsed = invokeParseMessage(message)
+        assertEquals(2, parsed.parts.size)
+        assertTrue(parsed.parts[0] is UIMessagePart.Text)
+        assertTrue(parsed.parts[1] is UIMessagePart.Image)
+        assertEquals("这里是图像：\\n\\n处理完成。", (parsed.parts[0] as UIMessagePart.Text).text)
+    }
+
+    @Test
+    fun `parseMessage should keep full data uri for images array`() {
+        val base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO3hD2kAAAAASUVORK5CYII="
+        val message = buildJsonObject {
+            put("role", "assistant")
+            put("content", "")
+            put("images", buildJsonArray {
+                add(
+                    buildJsonObject {
+                        put("type", "image_url")
+                        put("image_url", buildJsonObject {
+                            put("url", "data:image/png;base64,$base64")
+                        })
+                    }
+                )
+            })
+        }
+
+        val parsed = invokeParseMessage(message)
+        assertEquals(1, parsed.parts.size)
+        assertTrue(parsed.parts.first() is UIMessagePart.Image)
+        assertEquals("data:image/png;base64,$base64", (parsed.parts.first() as UIMessagePart.Image).url)
     }
 
     @Test

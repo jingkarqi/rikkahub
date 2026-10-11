@@ -19,6 +19,7 @@ import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import me.rerere.rikkahub.data.db.entity.WorkspaceEntity
+import me.rerere.rikkahub.data.files.exportWorkspaceCacheFile
 import me.rerere.rikkahub.data.repository.WorkspaceRepository
 import me.rerere.workspace.RootfsInstallProgress
 import me.rerere.workspace.RootfsInstallStage
@@ -235,19 +236,17 @@ class WorkspaceDetailVM(
      * 供分享 / 图片预览 / 交给系统应用打开等复用 (它们都需要一个 FileProvider 可访问的真实 File).
      */
     fun exportToCacheFile(entry: WorkspaceFileEntry, cacheDir: File, onReady: (File) -> Unit) {
+        val area = state.value.area
         viewModelScope.launch {
             runCatching {
-                val dir = File(cacheDir, "workspace_share").apply { mkdirs() }
-                val file = File(dir, entry.name)
-                file.outputStream().use { output ->
+                exportWorkspaceCacheFile(cacheDir, entry.name) { output ->
                     repository.exportFile(
                         id = id,
-                        area = state.value.area,
+                        area = area,
                         path = entry.path,
                         outputStream = output,
                     )
                 }
-                file
             }.onSuccess(onReady).onFailure { error ->
                 _state.update { it.copy(error = error.message ?: "导出文件失败") }
             }

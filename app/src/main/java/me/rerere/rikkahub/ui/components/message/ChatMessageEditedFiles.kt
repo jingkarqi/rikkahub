@@ -41,11 +41,11 @@ import me.rerere.hugeicons.stroke.File02
 import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.hugeicons.stroke.Share08
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.files.exportWorkspaceCacheFile
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.repository.WorkspaceRepository
 import me.rerere.workspace.WorkspaceStorageArea
 import org.koin.compose.koinInject
-import java.io.File
 
 private const val DEFAULT_VISIBLE_COUNT = 3
 private val WORKSPACE_FILE_TOOL_NAMES = setOf("workspace_write_file", "workspace_edit_file")
@@ -173,9 +173,10 @@ internal fun EditedFilesList(
                         scope.launch {
                             runCatching {
                                 val (area, relativePath) = resolveWorkspacePath(p)
-                                val dir = File(context.cacheDir, "workspace_share").apply { mkdirs() }
-                                val file = File(dir, p.substringAfterLast('/'))
-                                file.outputStream().use { output ->
+                                val file = exportWorkspaceCacheFile(
+                                    cacheDir = context.cacheDir,
+                                    fileName = p.substringAfterLast('/'),
+                                ) { output ->
                                     workspaceRepository.exportFile(workspaceId, area, relativePath, output)
                                 }
                                 val uri = FileProvider.getUriForFile(
